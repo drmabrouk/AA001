@@ -33,6 +33,7 @@ class Champions_Daily_Operations {
 		// Restrict supervisor access to wp-admin and hide admin bar
 		add_action( 'admin_init', array( 'CSA_Auth', 'restrict_admin_access' ) );
 		add_action( 'after_setup_theme', array( 'CSA_Auth', 'hide_admin_bar_for_supervisors' ) );
+		add_action( 'template_redirect', array( 'CSA_Auth', 'handle_login_submit' ) );
 
 		// Enqueue scripts & styles for dashboard
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );

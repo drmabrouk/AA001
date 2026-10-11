@@ -1,11 +1,11 @@
 jQuery(document).ready(function ($) {
 	'use strict';
 
-	// Handle Main Tab Switching
+	// Handle Sidebar & Main Navigation Switching
 	$('.csa-main-tab-btn').on('click', function () {
 		var targetTab = $(this).data('tab');
 		$('.csa-main-tab-btn').removeClass('active');
-		$(this).addClass('active');
+		$('.csa-main-tab-btn[data-tab="' + targetTab + '"]').addClass('active');
 		$('.csa-main-tab-content').removeClass('active');
 		$('#' + targetTab).addClass('active');
 	});
@@ -267,6 +267,86 @@ jQuery(document).ready(function ($) {
 				$(this).show();
 			} else {
 				$(this).hide();
+			}
+		});
+	});
+
+	// Edit Report Handler
+	$(document).on('click', '.csa-edit-report-btn', function () {
+		var reportId = $(this).data('report-id');
+		if (!reportId) return;
+
+		$('#csa_save_status_msg').html('<div class="csa-alert">Loading report details for editing...</div>');
+		$('.csa-main-tab-btn[data-tab="csa_tab_create"]').trigger('click');
+
+		$.ajax({
+			url: csa_vars.ajax_url,
+			type: 'GET',
+			data: {
+				action: 'csa_get_report_details',
+				report_id: reportId,
+				nonce: csa_vars.nonce
+			},
+			success: function (res) {
+				if (res.success) {
+					var data = res.data;
+					var r = data.report;
+					var f = data.financials;
+
+					$('#csa_editing_report_id').val(r.id);
+					$('#csa_report_date').val(r.report_date).trigger('change');
+					$('#csa_academy_name').val(r.academy_name).trigger('change');
+					$('#csa_branch_name').val(r.branch_name).trigger('change');
+					$('#csa_prepared_by').val(r.prepared_by).trigger('change');
+					$('#csa_reporting_period').val(r.reporting_period).trigger('change');
+					$('#csa_operational_summary').val(r.operational_summary).trigger('change');
+					$('#csa_overall_remarks').val(r.overall_remarks).trigger('change');
+
+					if (f) {
+						$('#csa_opening_cash').val(f.opening_cash).trigger('change');
+						$('#csa_cash_collections').val(f.cash_collections).trigger('change');
+						$('#csa_bank_electronic').val(f.bank_electronic).trigger('change');
+						$('#csa_other_income').val(f.other_income).trigger('change');
+						$('#csa_discounts').val(f.discounts).trigger('change');
+						$('#csa_refunds').val(f.refunds).trigger('change');
+						$('#csa_expenses').val(f.expenses).trigger('change');
+						$('#csa_vat_rate').val(f.vat_rate).trigger('change');
+						$('#csa_outstanding_payments').val(f.outstanding_payments).trigger('change');
+						$('#csa_financial_notes').val(f.financial_notes).trigger('change');
+						calculateFinancials();
+					}
+
+					$('#csa_save_status_msg').html('<div class="csa-alert csa-alert-success">Report #' + r.report_code + ' loaded for editing. Make changes and submit to update.</div>');
+				} else {
+					$('#csa_save_status_msg').html('<div class="csa-alert csa-alert-danger">' + (res.data.message || 'Error loading report.') + '</div>');
+				}
+			}
+		});
+	});
+
+	// Delete Report Handler
+	$(document).on('click', '.csa-delete-report-btn', function () {
+		var reportId = $(this).data('report-id');
+		if (!reportId || !confirm('Are you sure you want to delete this daily report?')) return;
+
+		var $row = $(this).closest('tr');
+
+		$.ajax({
+			url: csa_vars.ajax_url,
+			type: 'POST',
+			data: {
+				action: 'csa_delete_report',
+				report_id: reportId,
+				nonce: csa_vars.nonce
+			},
+			success: function (res) {
+				if (res.success) {
+					$row.fadeOut(function () {
+						$(this).remove();
+					});
+				} else {
+					alert(res.data.message || 'Error deleting report.');
+				}
 			}
 		});
 	});

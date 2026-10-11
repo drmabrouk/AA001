@@ -31,37 +31,54 @@ class CSA_Dashboard_Shortcode {
 		ob_start();
 		?>
 		<div class="csa-dashboard-container">
-			<div class="csa-uae-accent">
-				<div class="csa-uae-red"></div>
-				<div class="csa-uae-green"></div>
-				<div class="csa-uae-white"></div>
-				<div class="csa-uae-black"></div>
-			</div>
-
-			<!-- Dashboard Header -->
-			<div class="csa-dashboard-header">
-				<div class="csa-header-title">
-					<div class="csa-brand-badge"><?php echo esc_html( $branding['academy_name'] ); ?></div>
-					<h1>Daily Operations Dashboard</h1>
-					<p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Branch: <strong><?php echo esc_html( $branding['branch_name'] ); ?></strong> | Today: <strong><?php echo esc_html( $today_date ); ?></strong></p>
-				</div>
-				<div class="csa-header-user-info">
-					<div class="csa-user-badge">
-						<div class="csa-user-name"><?php echo esc_html( $current_user->display_name ); ?></div>
-						<div class="csa-user-role"><?php echo esc_html( implode( ', ', $current_user->roles ) ); ?></div>
+			<!-- Left Sidebar Navigation -->
+			<aside class="csa-sidebar">
+				<div>
+					<div class="csa-sidebar-brand">
+						<div class="csa-brand-badge">CHAMPIONS SPORTS ACADEMY</div>
+						<h2>Reports Center</h2>
 					</div>
-					<a href="<?php echo esc_url( wp_logout_url( get_permalink() ) ); ?>" class="csa-btn csa-btn-secondary csa-btn-sm">Sign Out</a>
+					<nav class="csa-sidebar-nav">
+						<button type="button" class="csa-sidebar-btn csa-main-tab-btn active" data-tab="csa_tab_overview">
+							<span>📊</span> Overview & Stats
+						</button>
+						<button type="button" class="csa-sidebar-btn csa-main-tab-btn" data-tab="csa_tab_create">
+							<span>📝</span> Create Daily Report
+						</button>
+						<button type="button" class="csa-sidebar-btn csa-main-tab-btn" data-tab="csa_tab_monthly_staff">
+							<span>📅</span> Monthly Attendance
+						</button>
+						<button type="button" class="csa-sidebar-btn csa-main-tab-btn" data-tab="csa_tab_archive">
+							<span>📁</span> Report Archive (<?php echo (int) $total_reports; ?>)
+						</button>
+						<button type="button" class="csa-sidebar-btn csa-main-tab-btn" data-tab="csa_tab_settings">
+							<span>⚙️</span> Branding & Settings
+						</button>
+					</nav>
 				</div>
-			</div>
+				<div class="csa-sidebar-footer">
+					<div style="font-size: 13px; font-weight: 600; color: #ffffff;"><?php echo esc_html( $current_user->display_name ); ?></div>
+					<div style="font-size: 11px; color: #9ca3af; margin-bottom: 12px;"><?php echo esc_html( implode( ', ', $current_user->roles ) ); ?></div>
+					<a href="<?php echo esc_url( wp_logout_url( get_permalink() ) ); ?>" class="csa-btn csa-btn-secondary csa-btn-sm csa-btn-block">Sign Out</a>
+				</div>
+			</aside>
 
-			<!-- Navigation Tabs -->
-			<div class="csa-nav-tabs">
-				<button type="button" class="csa-tab-btn csa-main-tab-btn active" data-tab="csa_tab_overview">Overview & Stats</button>
-				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_create">Create New Daily Report</button>
-				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_monthly_staff">Monthly Attendance Calendar</button>
-				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_archive">Report Archive (<?php echo (int) $total_reports; ?>)</button>
-				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_settings">Branding & Settings</button>
-			</div>
+			<!-- Main Content Panel -->
+			<main class="csa-main-content">
+				<div class="csa-uae-accent">
+					<div class="csa-uae-red"></div>
+					<div class="csa-uae-green"></div>
+					<div class="csa-uae-white"></div>
+					<div class="csa-uae-black"></div>
+				</div>
+
+				<!-- Dashboard Header -->
+				<div class="csa-dashboard-header">
+					<div class="csa-header-title">
+						<h1><?php echo esc_html( $branding['academy_name'] ); ?></h1>
+						<p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Branch: <strong><?php echo esc_html( $branding['branch_name'] ); ?></strong> | Today: <strong><?php echo esc_html( $today_date ); ?></strong></p>
+					</div>
+				</div>
 
 			<!-- TAB 1: OVERVIEW -->
 			<div id="csa_tab_overview" class="csa-main-tab-content active">
@@ -109,8 +126,10 @@ class CSA_Dashboard_Shortcode {
 											<td><?php echo esc_html( $rep['prepared_by'] ); ?></td>
 											<td><span style="background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600;"><?php echo esc_html( strtoupper( $rep['status'] ) ); ?></span></td>
 											<td>
+												<button type="button" class="csa-btn csa-btn-secondary csa-btn-sm csa-edit-report-btn" data-report-id="<?php echo esc_attr( $rep['id'] ); ?>">Edit Report</button>
 												<a href="<?php echo esc_url( CSA_PDF_Generator::get_pdf_download_url( $rep['id'] ) ); ?>" class="csa-btn csa-btn-primary csa-btn-sm" target="_blank">PDF Download</a>
 												<a href="<?php echo esc_url( CSA_WhatsApp::get_whatsapp_share_url( $rep['id'] ) ); ?>" class="csa-btn csa-btn-success csa-btn-sm" target="_blank">WhatsApp Share</a>
+												<button type="button" class="csa-btn csa-btn-danger csa-btn-sm csa-delete-report-btn" data-report-id="<?php echo esc_attr( $rep['id'] ); ?>">&times;</button>
 											</td>
 										</tr>
 									<?php endforeach; ?>
@@ -124,6 +143,7 @@ class CSA_Dashboard_Shortcode {
 			<!-- TAB 2: CREATE NEW DAILY REPORT -->
 			<div id="csa_tab_create" class="csa-main-tab-content">
 				<form id="csa_daily_report_form">
+					<input type="hidden" name="report_id" id="csa_editing_report_id" value="0">
 					<div id="csa_save_status_msg"></div>
 
 					<!-- Form Section Navigation Sub-Tabs -->
@@ -648,8 +668,10 @@ class CSA_Dashboard_Shortcode {
 											<td><?php echo esc_html( $rep['branch_name'] ); ?></td>
 											<td><?php echo esc_html( $rep['prepared_by'] ); ?></td>
 											<td>
+												<button type="button" class="csa-btn csa-btn-secondary csa-btn-sm csa-edit-report-btn" data-report-id="<?php echo esc_attr( $rep['id'] ); ?>">Edit Report</button>
 												<a href="<?php echo esc_url( CSA_PDF_Generator::get_pdf_download_url( $rep['id'] ) ); ?>" class="csa-btn csa-btn-primary csa-btn-sm" target="_blank">PDF Download</a>
 												<a href="<?php echo esc_url( CSA_WhatsApp::get_whatsapp_share_url( $rep['id'] ) ); ?>" class="csa-btn csa-btn-success csa-btn-sm" target="_blank">WhatsApp Share</a>
+												<button type="button" class="csa-btn csa-btn-danger csa-btn-sm csa-delete-report-btn" data-report-id="<?php echo esc_attr( $rep['id'] ); ?>">&times;</button>
 											</td>
 										</tr>
 									<?php endforeach; ?>
@@ -718,6 +740,7 @@ class CSA_Dashboard_Shortcode {
 					</form>
 				</div>
 			</div>
+			</main>
 		</div>
 		<?php
 		return ob_get_clean();

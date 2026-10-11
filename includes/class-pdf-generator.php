@@ -90,12 +90,17 @@ class CSA_PDF_Generator {
 	}
 
 	public static function get_pdf_download_url( $report_id ) {
-		$nonce = wp_create_nonce( 'csa_pdf_download_' . $report_id );
+		$expires   = time() + ( 7 * DAY_IN_SECONDS ); // 7 days link validity
+		$salt      = defined( 'AUTH_KEY' ) ? AUTH_KEY : 'csa_secret_key';
+		$token_raw = $report_id . '|' . $expires . '|' . $salt;
+		$token     = wp_hash( $token_raw );
+
 		return add_query_arg(
 			array(
 				'csa_action' => 'download_pdf',
 				'report_id'  => $report_id,
-				'_wpnonce'   => $nonce,
+				'expires'    => $expires,
+				'token'      => $token,
 			),
 			home_url( '/' )
 		);
@@ -104,14 +109,32 @@ class CSA_PDF_Generator {
 	public static function handle_pdf_download_request() {
 		if ( isset( $_GET['csa_action'] ) && 'download_pdf' === $_GET['csa_action'] && isset( $_GET['report_id'] ) ) {
 			$report_id = (int) $_GET['report_id'];
-			$nonce     = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( $_GET['_wpnonce'] ) : '';
+			$expires   = isset( $_GET['expires'] ) ? (int) $_GET['expires'] : 0;
+			$token     = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : '';
 
-			if ( ! wp_verify_nonce( $nonce, 'csa_pdf_download_' . $report_id ) ) {
-				wp_die( 'Security check failed or link has expired.', 'Access Denied', array( 'response' => 403 ) );
+			$is_authorized = false;
+
+			// Check secure expiring token (for WhatsApp shared links or external viewing)
+			if ( $expires > 0 && ! empty( $token ) ) {
+				if ( time() <= $expires ) {
+					$salt          = defined( 'AUTH_KEY' ) ? AUTH_KEY : 'csa_secret_key';
+					$expected_hash = wp_hash( $report_id . '|' . $expires . '|' . $salt );
+					if ( hash_equals( $expected_hash, $token ) ) {
+						$is_authorized = true;
+					}
+				}
 			}
 
-			if ( ! is_user_logged_in() || ! CSA_Auth::user_can_manage_report( get_current_user_id(), $report_id ) ) {
-				wp_die( 'Unauthorized access to daily report PDF.', 'Access Denied', array( 'response' => 403 ) );
+			// Check standard logged in user ownership if token not present or expired
+			if ( ! $is_authorized ) {
+				$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( $_GET['_wpnonce'] ) : '';
+				if ( is_user_logged_in() && CSA_Auth::user_can_manage_report( get_current_user_id(), $report_id ) ) {
+					$is_authorized = true;
+				}
+			}
+
+			if ( ! $is_authorized ) {
+				wp_die( 'Security check failed, download link expired, or access denied.', 'Access Denied', array( 'response' => 403 ) );
 			}
 
 			$pdf_binary = self::generate_pdf( $report_id );

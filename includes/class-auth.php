@@ -48,8 +48,9 @@ class CSA_Auth {
 		return (int) $report_owner === (int) $user_id;
 	}
 
-	public static function render_login_form() {
-		$error_msg = '';
+	public static $login_error = '';
+
+	public static function handle_login_submit() {
 		if ( isset( $_POST['csa_login_nonce'] ) && wp_verify_nonce( sanitize_text_field( $_POST['csa_login_nonce'] ), 'csa_login_action' ) ) {
 			$creds = array(
 				'user_login'    => sanitize_text_field( $_POST['log'] ),
@@ -60,7 +61,7 @@ class CSA_Auth {
 			$user = wp_signon( $creds, is_ssl() );
 
 			if ( is_wp_error( $user ) ) {
-				$error_msg = $user->get_error_message();
+				self::$login_error = $user->get_error_message();
 			} else {
 				$dashboard_id = get_option( 'csa_dashboard_page_id' );
 				$redirect     = $dashboard_id ? get_permalink( $dashboard_id ) : home_url( '/' );
@@ -68,6 +69,10 @@ class CSA_Auth {
 				exit;
 			}
 		}
+	}
+
+	public static function render_login_form() {
+		$error_msg = self::$login_error;
 
 		if ( function_exists( 'wp_style_is' ) && ! wp_style_is( 'csa-dashboard-style', 'enqueued' ) ) {
 			wp_enqueue_style( 'csa-dashboard-style', CSA_PLUGIN_URL . 'assets/css/dashboard.css', array(), CSA_VERSION );

@@ -9,6 +9,8 @@ class CSA_AJAX_Handler {
 	public static function register_hooks() {
 		add_action( 'wp_ajax_csa_save_daily_report', array( __CLASS__, 'save_daily_report' ) );
 		add_action( 'wp_ajax_csa_save_branding_settings', array( __CLASS__, 'save_branding_settings' ) );
+		add_action( 'wp_ajax_csa_get_report_details', array( __CLASS__, 'get_report_details' ) );
+		add_action( 'wp_ajax_csa_delete_report', array( __CLASS__, 'delete_report' ) );
 	}
 
 	public static function save_daily_report() {
@@ -19,6 +21,7 @@ class CSA_AJAX_Handler {
 		}
 
 		$user_id     = get_current_user_id();
+		$report_id   = isset( $_POST['report_id'] ) ? (int) $_POST['report_id'] : 0;
 		$report_date = isset( $_POST['report_date'] ) ? sanitize_text_field( $_POST['report_date'] ) : current_time( 'Y-m-d' );
 		$academy     = isset( $_POST['academy_name'] ) ? sanitize_text_field( $_POST['academy_name'] ) : 'Champions Sports Academy';
 		$branch      = isset( $_POST['branch_name'] ) ? sanitize_text_field( $_POST['branch_name'] ) : 'Main Branch';
@@ -27,39 +30,106 @@ class CSA_AJAX_Handler {
 		$summary     = isset( $_POST['operational_summary'] ) ? sanitize_textarea_field( $_POST['operational_summary'] ) : '';
 		$remarks     = isset( $_POST['overall_remarks'] ) ? sanitize_textarea_field( $_POST['overall_remarks'] ) : '';
 
+		// Collect Retail Sales, Comms, and Notes into additional_data
+		$additional_data = array(
+			'retail' => array(
+				'cap_qty'        => isset( $_POST['retail_cap_qty'] ) ? (int) $_POST['retail_cap_qty'] : 0,
+				'cap_total'      => isset( $_POST['retail_cap_total'] ) ? (float) $_POST['retail_cap_total'] : 0,
+				'uniform_qty'    => isset( $_POST['retail_uniform_qty'] ) ? (int) $_POST['retail_uniform_qty'] : 0,
+				'uniform_total'  => isset( $_POST['retail_uniform_total'] ) ? (float) $_POST['retail_uniform_total'] : 0,
+			),
+			'comms' => array(),
+			'predefined_notes' => isset( $_POST['predefined_notes'] ) && is_array( $_POST['predefined_notes'] ) ? array_map( 'sanitize_text_field', $_POST['predefined_notes'] ) : array(),
+			'custom_notes'     => isset( $_POST['custom_notes'] ) ? sanitize_textarea_field( $_POST['custom_notes'] ) : '',
+		);
+
+		if ( ! empty( $_POST['comms'] ) && is_array( $_POST['comms'] ) ) {
+			foreach ( $_POST['comms'] as $cm ) {
+				if ( empty( $cm['parent_name'] ) && empty( $cm['summary'] ) ) continue;
+				$additional_data['comms'][] = array(
+					'parent_name'  => isset( $cm['parent_name'] ) ? sanitize_text_field( $cm['parent_name'] ) : '',
+					'athlete_name' => isset( $cm['athlete_name'] ) ? sanitize_text_field( $cm['athlete_name'] ) : '',
+					'sport'        => isset( $cm['sport'] ) ? sanitize_text_field( $cm['sport'] ) : '',
+					'channel'      => isset( $cm['channel'] ) ? sanitize_text_field( $cm['channel'] ) : '',
+					'summary'      => isset( $cm['summary'] ) ? sanitize_textarea_field( $cm['summary'] ) : '',
+					'action'       => isset( $cm['action'] ) ? sanitize_text_field( $cm['action'] ) : '',
+				);
+			}
+		}
+
 		global $wpdb;
 		$table_reports = CSA_DB::get_table_name( 'reports' );
 
-		// Generate unique report code e.g. CSA-20260330-8492
-		$report_code = 'CSA-' . date( 'Ymd', strtotime( $report_date ) ) . '-' . rand( 1000, 9999 );
+		// Check if updating an existing report or creating a new one
+		if ( $report_id > 0 ) {
+			if ( ! CSA_Auth::user_can_manage_report( $user_id, $report_id ) ) {
+				wp_send_json_error( array( 'message' => 'Permission denied to update this report.' ) );
+			}
 
-		// Branding Snapshot
-		$branding_snapshot = CSA_Branding::create_branding_snapshot( $user_id );
+			$wpdb->update(
+				$table_reports,
+				array(
+					'report_date'         => $report_date,
+					'academy_name'        => $academy,
+					'branch_name'         => $branch,
+					'prepared_by'         => $prepared_by,
+					'reporting_period'    => $period,
+					'operational_summary' => $summary,
+					'overall_remarks'     => $remarks,
+					'additional_data'     => wp_json_encode( $additional_data ),
+					'updated_at'          => current_time( 'mysql' ),
+				),
+				array( 'id' => $report_id ),
+				array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+				array( '%d' )
+			);
 
-		$inserted = $wpdb->insert(
-			$table_reports,
-			array(
-				'report_code'         => $report_code,
-				'user_id'             => $user_id,
-				'report_date'         => $report_date,
-				'academy_name'        => $academy,
-				'branch_name'         => $branch,
-				'prepared_by'         => $prepared_by,
-				'reporting_period'    => $period,
-				'operational_summary' => $summary,
-				'overall_remarks'     => $remarks,
-				'status'              => 'finalized',
-				'branding_snapshot'  => $branding_snapshot,
-				'created_at'          => current_time( 'mysql' ),
-			),
-			array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
-		);
+			// Clear existing sub-records to prevent duplicates on update
+			$wpdb->delete( CSA_DB::get_table_name( 'financials' ), array( 'report_id' => $report_id ), array( '%d' ) );
+			$wpdb->delete( CSA_DB::get_table_name( 'staff_attendance' ), array( 'report_id' => $report_id ), array( '%d' ) );
 
-		if ( ! $inserted ) {
-			wp_send_json_error( array( 'message' => 'Failed to save main report record.' ) );
+			// Sports and Athlete records
+			$table_sports = CSA_DB::get_table_name( 'sports_attendance' );
+			$table_athletes = CSA_DB::get_table_name( 'athlete_attendance' );
+			$old_sports_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM $table_sports WHERE report_id = %d", $report_id ) );
+			if ( ! empty( $old_sports_ids ) ) {
+				$ids_str = implode( ',', array_map( 'intval', $old_sports_ids ) );
+				$wpdb->query( "DELETE FROM $table_athletes WHERE sports_attendance_id IN ($ids_str)" );
+			}
+			$wpdb->delete( $table_sports, array( 'report_id' => $report_id ), array( '%d' ) );
+			$wpdb->delete( CSA_DB::get_table_name( 'daily_activities' ), array( 'report_id' => $report_id ), array( '%d' ) );
+
+		} else {
+			// Generate unique report code e.g. CSA-20260330-8492
+			$report_code = 'CSA-' . date( 'Ymd', strtotime( $report_date ) ) . '-' . rand( 1000, 9999 );
+			$branding_snapshot = CSA_Branding::create_branding_snapshot( $user_id );
+
+			$inserted = $wpdb->insert(
+				$table_reports,
+				array(
+					'report_code'         => $report_code,
+					'user_id'             => $user_id,
+					'report_date'         => $report_date,
+					'academy_name'        => $academy,
+					'branch_name'         => $branch,
+					'prepared_by'         => $prepared_by,
+					'reporting_period'    => $period,
+					'operational_summary' => $summary,
+					'overall_remarks'     => $remarks,
+					'status'              => 'finalized',
+					'branding_snapshot'  => $branding_snapshot,
+					'additional_data'     => wp_json_encode( $additional_data ),
+					'created_at'          => current_time( 'mysql' ),
+				),
+				array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			);
+
+			if ( ! $inserted ) {
+				wp_send_json_error( array( 'message' => 'Failed to save main report record.' ) );
+			}
+
+			$report_id = $wpdb->insert_id;
 		}
-
-		$report_id = $wpdb->insert_id;
 
 		// Save Financials
 		$fin_data = CSA_DB::calculate_financials( array(
@@ -124,7 +194,14 @@ class CSA_AJAX_Handler {
 			$table_athletes = CSA_DB::get_table_name( 'athlete_attendance' );
 
 			foreach ( $_POST['sports'] as $sp ) {
-				if ( empty( $sp['is_active'] ) ) continue; // Skip unused sport programs
+				$has_data = ! empty( $sp['is_active'] ) ||
+				            ! empty( $sp['coach_name'] ) ||
+				            ! empty( $sp['session_time'] ) ||
+				            ( isset( $sp['expected_count'] ) && (int) $sp['expected_count'] > 0 ) ||
+				            ( isset( $sp['present_count'] ) && (int) $sp['present_count'] > 0 ) ||
+				            ( ! empty( $sp['athletes'] ) && is_array( $sp['athletes'] ) );
+
+				if ( ! $has_data ) continue; // Skip completely unused sports programs
 
 				$sport_name = sanitize_text_field( $sp['sport_name'] );
 				$mode       = isset( $sp['entry_mode'] ) && 'individual' === $sp['entry_mode'] ? 'individual' : 'summary';
@@ -215,12 +292,102 @@ class CSA_AJAX_Handler {
 			}
 		}
 
-		CSA_DB::log_audit( $user_id, $report_id, 'create_report', 'Report created successfully' );
+		CSA_DB::log_audit( $user_id, $report_id, $report_id > 0 ? 'update_report' : 'create_report', 'Report saved successfully' );
 
 		wp_send_json_success( array(
 			'message'   => 'Daily report saved successfully!',
 			'report_id' => $report_id,
 		) );
+	}
+
+	public static function get_report_details() {
+		check_ajax_referer( 'csa_dashboard_nonce', 'nonce' );
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized user.' ) );
+		}
+
+		$user_id   = get_current_user_id();
+		$report_id = isset( $_GET['report_id'] ) ? (int) $_GET['report_id'] : 0;
+
+		if ( ! CSA_Auth::user_can_manage_report( $user_id, $report_id ) ) {
+			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+		}
+
+		global $wpdb;
+		$table_reports = CSA_DB::get_table_name( 'reports' );
+		$report = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_reports WHERE id = %d", $report_id ), ARRAY_A );
+
+		if ( ! $report ) {
+			wp_send_json_error( array( 'message' => 'Report not found.' ) );
+		}
+
+		$report['additional_data'] = ! empty( $report['additional_data'] ) ? json_decode( $report['additional_data'], true ) : array();
+
+		// Financials
+		$table_fin  = CSA_DB::get_table_name( 'financials' );
+		$financials = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_fin WHERE report_id = %d", $report_id ), ARRAY_A );
+
+		// Staff
+		$table_staff = CSA_DB::get_table_name( 'staff_attendance' );
+		$staff       = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_staff WHERE report_id = %d", $report_id ), ARRAY_A );
+
+		// Sports
+		$table_sports   = CSA_DB::get_table_name( 'sports_attendance' );
+		$table_athletes = CSA_DB::get_table_name( 'athlete_attendance' );
+		$sports         = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_sports WHERE report_id = %d", $report_id ), ARRAY_A );
+
+		if ( ! empty( $sports ) ) {
+			foreach ( $sports as &$sp ) {
+				$sp['athletes'] = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_athletes WHERE sports_attendance_id = %d", $sp['id'] ), ARRAY_A );
+			}
+		}
+
+		// Activities
+		$table_act  = CSA_DB::get_table_name( 'daily_activities' );
+		$activities = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_act WHERE report_id = %d", $report_id ), ARRAY_A );
+
+		wp_send_json_success( array(
+			'report'     => $report,
+			'financials' => $financials,
+			'staff'      => $staff,
+			'sports'     => $sports,
+			'activities' => $activities,
+		) );
+	}
+
+	public static function delete_report() {
+		check_ajax_referer( 'csa_dashboard_nonce', 'nonce' );
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized user.' ) );
+		}
+
+		$user_id   = get_current_user_id();
+		$report_id = isset( $_POST['report_id'] ) ? (int) $_POST['report_id'] : 0;
+
+		if ( ! CSA_Auth::user_can_manage_report( $user_id, $report_id ) ) {
+			wp_send_json_error( array( 'message' => 'Permission denied to delete this report.' ) );
+		}
+
+		global $wpdb;
+		$wpdb->delete( CSA_DB::get_table_name( 'reports' ), array( 'id' => $report_id ), array( '%d' ) );
+		$wpdb->delete( CSA_DB::get_table_name( 'financials' ), array( 'report_id' => $report_id ), array( '%d' ) );
+		$wpdb->delete( CSA_DB::get_table_name( 'staff_attendance' ), array( 'report_id' => $report_id ), array( '%d' ) );
+
+		$table_sports = CSA_DB::get_table_name( 'sports_attendance' );
+		$table_athletes = CSA_DB::get_table_name( 'athlete_attendance' );
+		$old_sports_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM $table_sports WHERE report_id = %d", $report_id ) );
+		if ( ! empty( $old_sports_ids ) ) {
+			$ids_str = implode( ',', array_map( 'intval', $old_sports_ids ) );
+			$wpdb->query( "DELETE FROM $table_athletes WHERE sports_attendance_id IN ($ids_str)" );
+		}
+		$wpdb->delete( $table_sports, array( 'report_id' => $report_id ), array( '%d' ) );
+		$wpdb->delete( CSA_DB::get_table_name( 'daily_activities' ), array( 'report_id' => $report_id ), array( '%d' ) );
+
+		CSA_DB::log_audit( $user_id, $report_id, 'delete_report', 'Report deleted' );
+
+		wp_send_json_success( array( 'message' => 'Report deleted successfully.' ) );
 	}
 
 	public static function save_branding_settings() {

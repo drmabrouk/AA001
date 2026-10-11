@@ -32,6 +32,7 @@ class CSA_DB {
 			overall_remarks text,
 			status varchar(20) NOT NULL DEFAULT 'finalized',
 			branding_snapshot text,
+			additional_data longtext,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),

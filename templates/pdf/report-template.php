@@ -67,6 +67,14 @@
 			</table>
 		</div>
 
+		<?php
+		$add_data = ! empty( $report['additional_data'] ) ? json_decode( $report['additional_data'], true ) : array();
+		$retail   = ! empty( $add_data['retail'] ) ? $add_data['retail'] : array();
+		$comms    = ! empty( $add_data['comms'] ) ? $add_data['comms'] : array();
+		$pre_notes = ! empty( $add_data['predefined_notes'] ) ? $add_data['predefined_notes'] : array();
+		$cust_notes = ! empty( $add_data['custom_notes'] ) ? $add_data['custom_notes'] : '';
+		?>
+
 		<?php if ( ! empty( $financials ) ) : ?>
 			<div class="section">
 				<div class="section-title">Section B: Financial Summary (<?php echo esc_html( $currency ); ?>)</div>
@@ -132,6 +140,37 @@
 				<?php if ( ! empty( $financials['financial_notes'] ) ) : ?>
 					<p style="font-size: 10px; color: #4b5563;"><strong>Financial Notes:</strong> <?php echo esc_html( $financials['financial_notes'] ); ?></p>
 				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $retail['cap_qty'] ) || ! empty( $retail['uniform_qty'] ) ) : ?>
+			<div class="section">
+				<div class="section-title">Retail Product Sales Summary</div>
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Item Description</th>
+							<th style="text-align: center;">Quantity Sold</th>
+							<th style="text-align: right;">Total Amount (<?php echo esc_html( $currency ); ?>)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php if ( ! empty( $retail['cap_qty'] ) ) : ?>
+							<tr>
+								<td>Swimming Caps</td>
+								<td style="text-align: center;"><?php echo (int) $retail['cap_qty']; ?></td>
+								<td style="text-align: right;"><?php echo number_format( (float) $retail['cap_total'], 2 ); ?></td>
+							</tr>
+						<?php endif; ?>
+						<?php if ( ! empty( $retail['uniform_qty'] ) ) : ?>
+							<tr>
+								<td>Academy Uniforms</td>
+								<td style="text-align: center;"><?php echo (int) $retail['uniform_qty']; ?></td>
+								<td style="text-align: right;"><?php echo number_format( (float) $retail['uniform_total'], 2 ); ?></td>
+							</tr>
+						<?php endif; ?>
+					</tbody>
+				</table>
 			</div>
 		<?php endif; ?>
 
@@ -264,6 +303,59 @@
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $comms ) ) : ?>
+			<div class="section">
+				<div class="section-title">Parent Communication & Inquiries Log</div>
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Parent Name</th>
+							<th>Athlete Name</th>
+							<th>Sport</th>
+							<th>Channel</th>
+							<th>Discussion Summary</th>
+							<th>Action Taken</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $comms as $cm ) : ?>
+							<tr>
+								<td><strong><?php echo esc_html( $cm['parent_name'] ); ?></strong></td>
+								<td><?php echo esc_html( $cm['athlete_name'] ? $cm['athlete_name'] : '-' ); ?></td>
+								<td><?php echo esc_html( $cm['sport'] ? $cm['sport'] : '-' ); ?></td>
+								<td><?php echo esc_html( $cm['channel'] ? $cm['channel'] : '-' ); ?></td>
+								<td><?php echo nl2br( esc_html( $cm['summary'] ) ); ?></td>
+								<td><?php echo esc_html( $cm['action'] ? $cm['action'] : '-' ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $pre_notes ) || ! empty( $cust_notes ) ) : ?>
+			<div class="section">
+				<div class="section-title">Section F: General Notes & Operational Recommendations</div>
+				<?php if ( ! empty( $pre_notes ) ) : ?>
+					<div style="margin-bottom: 8px;">
+						<strong>Selected Observations:</strong>
+						<ul style="margin: 4px 0 0 16px; padding: 0;">
+							<?php foreach ( $pre_notes as $p_note ) : ?>
+								<li style="font-size: 10px; color: #374151;"><?php echo esc_html( $p_note ); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $cust_notes ) ) : ?>
+					<p style="font-size: 10px; color: #374151; margin-top: 6px;">
+						<strong>Additional Operational Remarks:</strong><br>
+						<?php echo nl2br( esc_html( $cust_notes ) ); ?>
+					</p>
+				<?php endif; ?>
 			</div>
 		<?php endif; ?>
 
