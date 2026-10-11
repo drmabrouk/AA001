@@ -12,7 +12,12 @@ define( 'CSA_PLUGIN_URL', '/' );
 define( 'CSA_VERSION', '1.0.0' );
 
 // Mock Functions
-function is_user_logged_in() { return true; }
+function is_user_logged_in() {
+	if ( isset( $_GET['logged_out'] ) && '1' === $_GET['logged_out'] ) {
+		return false;
+	}
+	return true;
+}
 function wp_get_current_user() {
 	return (object) array( 'ID' => 1, 'display_name' => 'John Supervisor', 'roles' => array( 'sports_operations_supervisor' ) );
 }
@@ -34,6 +39,9 @@ function sanitize_text_field( $str ) { return trim( strip_tags( (string)$str ) )
 function sanitize_textarea_field( $str ) { return trim( strip_tags( (string)$str ) ); }
 function check_ajax_referer() { return true; }
 function wp_create_nonce( $action = '' ) { return 'test_nonce'; }
+function wp_nonce_field( $action = '', $name = '_wpnonce' ) {
+	echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="test_nonce" />';
+}
 function wp_verify_nonce( $nonce, $action = '' ) { return true; }
 function add_query_arg( $args, $url = '' ) { return $url . '?' . http_build_query( $args ); }
 function wp_die( $msg = '' ) { die( $msg ); }

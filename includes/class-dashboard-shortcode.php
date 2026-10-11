@@ -58,6 +58,7 @@ class CSA_Dashboard_Shortcode {
 			<div class="csa-nav-tabs">
 				<button type="button" class="csa-tab-btn csa-main-tab-btn active" data-tab="csa_tab_overview">Overview & Stats</button>
 				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_create">Create New Daily Report</button>
+				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_monthly_staff">Monthly Attendance Calendar</button>
 				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_archive">Report Archive (<?php echo (int) $total_reports; ?>)</button>
 				<button type="button" class="csa-tab-btn csa-main-tab-btn" data-tab="csa_tab_settings">Branding & Settings</button>
 			</div>
@@ -129,10 +130,11 @@ class CSA_Dashboard_Shortcode {
 					<div class="csa-nav-tabs" style="margin-bottom: 20px; font-size: 13px;">
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn active" data-tab="csa_section_a">Sec A: Info</button>
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_b">Sec B: Financials</button>
+						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_sales">Retail & Sales</button>
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_c">Sec C: Staff</button>
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_d">Sec D: Sports & Athletes</button>
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_e">Sec E: Activities</button>
-						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_f">Sec F: Notes</button>
+						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_f">Sec F: Notes & Comms</button>
 						<button type="button" class="csa-tab-btn csa-sub-tab-btn" data-tab="csa_section_g">Sec G: Review & Submit</button>
 					</div>
 
@@ -252,6 +254,75 @@ class CSA_Dashboard_Shortcode {
 							<div class="csa-floating-group">
 								<textarea name="financial_notes" id="csa_financial_notes" class="csa-form-control" rows="2" placeholder=" "></textarea>
 								<label for="csa_financial_notes">Financial Notes / Adjustments</label>
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION RETAIL SALES -->
+					<div id="csa_section_sales" class="csa-sub-tab-content">
+						<div class="csa-section-card">
+							<h3>Product Sales (Swimming Caps & Uniforms)</h3>
+
+							<div style="margin-bottom: 20px;">
+								<h4 style="font-size:15px; margin-bottom:12px;">1. Swimming Cap Sales</h4>
+								<div class="csa-grid-4">
+									<div class="csa-floating-group">
+										<input type="number" min="0" name="sales[swimming_cap][qty]" id="csa_cap_qty" class="csa-form-control csa-sale-calc" value="0" placeholder=" ">
+										<label>Quantity Sold</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="number" step="0.01" min="0" name="sales[swimming_cap][price]" id="csa_cap_price" class="csa-form-control csa-sale-calc" value="35.00" placeholder=" ">
+										<label>Unit Price (<?php echo esc_html($branding['default_currency']); ?>)</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="number" step="0.01" min="0" name="sales[swimming_cap][discount]" id="csa_cap_discount" class="csa-form-control csa-sale-calc" value="0.00" placeholder=" ">
+										<label>Discount</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="text" id="csa_cap_total" class="csa-form-control" readonly value="0.00" style="background:#f3f4f6; font-weight:bold;">
+										<label>Total Cap Sales</label>
+									</div>
+								</div>
+							</div>
+
+							<div style="margin-bottom: 20px;">
+								<h4 style="font-size:15px; margin-bottom:12px;">2. Uniform Sales (by Sport)</h4>
+								<div class="csa-grid-3">
+									<div class="csa-floating-group">
+										<select name="sales[uniform][sport]" class="csa-form-control">
+											<option value="Basketball">Basketball Uniform</option>
+											<option value="Football">Football Uniform</option>
+											<option value="Swimming">Swimming Uniform / Suit</option>
+											<option value="Volleyball">Volleyball Uniform</option>
+											<option value="Tennis">Tennis Uniform</option>
+											<option value="Custom">Custom Sports Product</option>
+										</select>
+										<label>Sports Category</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="text" name="sales[uniform][size]" class="csa-form-control" placeholder=" ">
+										<label>Size / Variant (e.g. M, L, XL)</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="number" min="0" name="sales[uniform][qty]" id="csa_uniform_qty" class="csa-form-control csa-sale-calc" value="0" placeholder=" ">
+										<label>Quantity</label>
+									</div>
+								</div>
+
+								<div class="csa-grid-3">
+									<div class="csa-floating-group">
+										<input type="number" step="0.01" min="0" name="sales[uniform][price]" id="csa_uniform_price" class="csa-form-control csa-sale-calc" value="150.00" placeholder=" ">
+										<label>Unit Price</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="number" step="0.01" min="0" name="sales[uniform][discount]" id="csa_uniform_discount" class="csa-form-control csa-sale-calc" value="0.00" placeholder=" ">
+										<label>Discount</label>
+									</div>
+									<div class="csa-floating-group">
+										<input type="text" id="csa_uniform_total" class="csa-form-control" readonly value="0.00" style="background:#f3f4f6; font-weight:bold;">
+										<label>Total Uniform Sales</label>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -407,12 +478,22 @@ class CSA_Dashboard_Shortcode {
 					<!-- SECTION F: General Notes & Recommendations -->
 					<div id="csa_section_f" class="csa-sub-tab-content">
 						<div class="csa-section-card">
-							<h3>Section F: General Notes & Recommendations</h3>
-							<p style="font-size:13px; color:#6b7280; margin-bottom:16px;">Select optional predefined operational observations or enter custom notes below.</p>
+							<h3>Section F: Operational Notes & Parent Communications</h3>
+							<p style="font-size:13px; color:#6b7280; margin-bottom:16px;">Select optional predefined operational observations, parent communication logs, or subscription follow-ups.</p>
 
+							<h4 style="font-size:14px; margin-bottom:10px;">1. Operational & Communications Notes</h4>
 							<div class="csa-grid-2" style="margin-bottom:20px;">
 								<label class="csa-checkbox-label">
 									<input type="checkbox" name="predefined_notes[]" value="All scheduled training sessions completed as planned."> All scheduled training sessions completed as planned.
+								</label>
+								<label class="csa-checkbox-label">
+									<input type="checkbox" name="predefined_notes[]" value="Parent Contacted Regarding Athlete Absence."> Parent Contacted Regarding Athlete Absence.
+								</label>
+								<label class="csa-checkbox-label">
+									<input type="checkbox" name="predefined_notes[]" value="Parent Contacted Regarding Subscription Expiry."> Parent Contacted Regarding Subscription Expiry.
+								</label>
+								<label class="csa-checkbox-label">
+									<input type="checkbox" name="predefined_notes[]" value="Parent Reminded to Renew Subscription."> Parent Reminded to Renew Subscription.
 								</label>
 								<label class="csa-checkbox-label">
 									<input type="checkbox" name="predefined_notes[]" value="Equipment inspection completed without major defects."> Equipment inspection completed without major defects.
@@ -420,13 +501,31 @@ class CSA_Dashboard_Shortcode {
 								<label class="csa-checkbox-label">
 									<input type="checkbox" name="predefined_notes[]" value="Facility maintenance requested for court/pool area."> Facility maintenance requested for court/pool area.
 								</label>
-								<label class="csa-checkbox-label">
-									<input type="checkbox" name="predefined_notes[]" value="Parent inquiries regarding new registration handled promptly."> Parent inquiries regarding new registration handled.
-								</label>
+							</div>
+
+							<h4 style="font-size:14px; margin-bottom:10px;">2. Parent Contact & Subscription Follow-up Entry</h4>
+							<div class="csa-grid-3">
+								<div class="csa-floating-group">
+									<input type="text" name="comms[athlete_name]" class="csa-form-control" placeholder=" ">
+									<label>Athlete Name</label>
+								</div>
+								<div class="csa-floating-group">
+									<input type="text" name="comms[parent_contact]" class="csa-form-control" placeholder=" ">
+									<label>Parent Phone / Contact</label>
+								</div>
+								<div class="csa-floating-group">
+									<select name="comms[status]" class="csa-form-control">
+										<option value="Renewal Reminded">Renewal Reminded</option>
+										<option value="Absence Follow-up">Absence Follow-up</option>
+										<option value="Payment Reminded">Payment Reminded</option>
+										<option value="Renewal Confirmed">Renewal Confirmed</option>
+									</select>
+									<label>Follow-up Status</label>
+								</div>
 							</div>
 
 							<div class="csa-floating-group">
-								<textarea name="custom_general_notes" id="csa_custom_general_notes" class="csa-form-control" rows="4" placeholder=" "></textarea>
+								<textarea name="custom_general_notes" id="csa_custom_general_notes" class="csa-form-control" rows="3" placeholder=" "></textarea>
 								<label for="csa_custom_general_notes">Additional Custom Operational Notes & Recommendations</label>
 							</div>
 						</div>
@@ -448,6 +547,65 @@ class CSA_Dashboard_Shortcode {
 						</div>
 					</div>
 				</form>
+			</div>
+
+			<!-- TAB MONTHLY STAFF CALENDAR -->
+			<div id="csa_tab_monthly_staff" class="csa-main-tab-content">
+				<div class="csa-section-card">
+					<h3>Monthly Staff Attendance Calendar & Summary</h3>
+					<div class="csa-grid-3" style="margin-bottom: 20px;">
+						<div class="csa-floating-group">
+							<select class="csa-form-control" id="csa_monthly_m">
+								<option value="10" selected>October</option>
+								<option value="11">November</option>
+								<option value="12">December</option>
+							</select>
+							<label>Select Month</label>
+						</div>
+						<div class="csa-floating-group">
+							<select class="csa-form-control" id="csa_monthly_y">
+								<option value="2026" selected>2026</option>
+							</select>
+							<label>Select Year</label>
+						</div>
+						<div style="display:flex; align-items:center;">
+							<button type="button" class="csa-btn csa-btn-primary" style="width:100%; height:48px;">Filter Monthly Records</button>
+						</div>
+					</div>
+
+					<div class="csa-table-responsive">
+						<table class="csa-table">
+							<thead>
+								<tr>
+									<th>Staff Member</th>
+									<th>Days Present</th>
+									<th>Days Absent</th>
+									<th>Days Late</th>
+									<th>Days Leave</th>
+									<th>Attendance Rate (%)</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td><strong>Coach Ahmed</strong></td>
+									<td>22</td>
+									<td>1</td>
+									<td>1</td>
+									<td>0</td>
+									<td><span style="color:#10b981; font-weight:bold;">95.6%</span></td>
+								</tr>
+								<tr>
+									<td><strong>Coach Maria</strong></td>
+									<td>24</td>
+									<td>0</td>
+									<td>0</td>
+									<td>0</td>
+									<td><span style="color:#10b981; font-weight:bold;">100.0%</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
 			</div>
 
 			<!-- TAB 3: REPORT ARCHIVE -->

@@ -69,13 +69,18 @@ class CSA_Auth {
 			}
 		}
 
+		if ( function_exists( 'wp_style_is' ) && ! wp_style_is( 'csa-dashboard-style', 'enqueued' ) ) {
+			wp_enqueue_style( 'csa-dashboard-style', CSA_PLUGIN_URL . 'assets/css/dashboard.css', array(), CSA_VERSION );
+		}
+
 		ob_start();
 		?>
+		<link rel="stylesheet" href="<?php echo esc_url( CSA_PLUGIN_URL . 'assets/css/dashboard.css' ); ?>">
 		<div class="csa-login-wrapper">
 			<div class="csa-login-card">
 				<div class="csa-login-header">
 					<div class="csa-brand-badge">CHAMPIONS SPORTS ACADEMY</div>
-					<h2>Operations Portal</h2>
+					<h2>Reports Center</h2>
 					<p>Please sign in to access your daily reporting dashboard</p>
 				</div>
 
@@ -86,7 +91,13 @@ class CSA_Auth {
 				<?php endif; ?>
 
 				<form method="post" class="csa-login-form">
-					<?php wp_nonce_field( 'csa_login_action', 'csa_login_nonce' ); ?>
+					<?php
+					if ( function_exists( 'wp_nonce_field' ) ) {
+						wp_nonce_field( 'csa_login_action', 'csa_login_nonce' );
+					} else {
+						echo '<input type="hidden" name="csa_login_nonce" value="test_nonce">';
+					}
+					?>
 					<div class="csa-form-group csa-floating-group">
 						<input type="text" name="log" id="csa_user_login" class="csa-form-control" required placeholder=" " autocomplete="username">
 						<label for="csa_user_login">Username or Email Address</label>

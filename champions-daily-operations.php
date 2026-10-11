@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Champions Sports Academy - Daily Operations & Reporting Management System
+ * Plugin Name:       Champions Sports Academy - Reports Center
  * Plugin URI:        https://championssportsacademy.com
  * Description:       Daily operational reports, financial summaries, staff/athlete attendance, activity logging, PDF report generation, and WhatsApp sharing system.
  * Version:           1.0.0

@@ -68,6 +68,25 @@ jQuery(document).ready(function ($) {
 		calculateFinancials();
 	});
 
+	// Sales Calculations
+	function calculateSales() {
+		var capQty = parseFloat($('#csa_cap_qty').val()) || 0;
+		var capPrice = parseFloat($('#csa_cap_price').val()) || 0;
+		var capDisc = parseFloat($('#csa_cap_discount').val()) || 0;
+		var capTotal = Math.max(0, (capQty * capPrice) - capDisc);
+		$('#csa_cap_total').val(capTotal.toFixed(2)).trigger('change');
+
+		var uniQty = parseFloat($('#csa_uniform_qty').val()) || 0;
+		var uniPrice = parseFloat($('#csa_uniform_price').val()) || 0;
+		var uniDisc = parseFloat($('#csa_uniform_discount').val()) || 0;
+		var uniTotal = Math.max(0, (uniQty * uniPrice) - uniDisc);
+		$('#csa_uniform_total').val(uniTotal.toFixed(2)).trigger('change');
+	}
+
+	$(document).on('input change', '.csa-sale-calc', function () {
+		calculateSales();
+	});
+
 	// Dynamic Staff Rows
 	$('#csa_add_staff_btn').on('click', function () {
 		var index = $('#csa_staff_tbody tr').length;

@@ -345,11 +345,16 @@ textarea.csa-form-control.has-value ~ label {
 
 /* Login Wrapper */
 .csa-login-wrapper {
-	max-width: 440px;
-	margin: 60px auto;
+	min-height: 70vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
 }
 
 .csa-login-card {
+	width: 100%;
+	max-width: 440px;
 	background: #ffffff;
 	border: 1px solid var(--csa-border);
 	border-radius: 12px;
