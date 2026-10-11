@@ -1,0 +1,14 @@
+{
+    "name": "champions/daily-operations",
+    "description": "Champions Sports Academy Daily Operations Plugin",
+    "type": "wordpress-plugin",
+    "authors": [
+        {
+            "name": "Jules",
+            "email": "jules@example.com"
+        }
+    ],
+    "require": {
+        "dompdf/dompdf": "^3.0"
+    }
+}
